@@ -1,0 +1,33 @@
+# One-off search: Inspirada, Henderson NV unicorn hunt
+location: "Inspirada, Henderson, NV"
+radius_miles: 10                  # "reasonable distance" from Inspirada
+listing_type: "for_sale"
+past_days: 60
+active_only: true
+
+sources:
+  realtor: true
+  redfin: true
+
+price_min: null
+price_max: 620000
+stretch_price_max: 650000  # also include listings up to here if stretch_dom_min+ days on market
+stretch_dom_min: 45        # seller may take less on a listing that's sat this long
+beds_min: 4
+beds_max: null
+baths_min: 2
+baths_max: null
+full_baths_min: 2
+sqft_min: 2000
+sqft_max: null
+lot_sqft_min: null
+lot_sqft_max: null
+year_built_min: null
+year_built_max: null
+property_types: null
+excluded_property_types: ["mobile"]
+
+output_dir: "reports"
+report_basename: "inspirada_unicorn"
+
+proxy: null

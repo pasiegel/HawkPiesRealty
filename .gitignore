@@ -1,0 +1,9 @@
+.venv/
+reports/
+__pycache__/
+*.pyc
+site/
+site_build/
+redfin_photos/
+debug.html
+vegas_50mi.yaml

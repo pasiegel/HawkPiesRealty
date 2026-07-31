@@ -1,0 +1,40 @@
+# House Scout search configuration.
+# Easiest way to fill this in: run `python -m house_scout.wizard` instead of editing by hand.
+# Manual edits work too - then run: python -m house_scout.main
+
+location: "Grand Rapids, MI"      # city/state, ZIP, or a specific street address
+radius_miles: 20                  # straight-line radius (not drive time); only applies when location is a specific address
+listing_type: "for_sale"          # for_sale, for_rent, sold, pending
+past_days: 14                     # listings from the last N days (list date for for_sale)
+active_only: true                 # exclude pending/contingent/under-contract/sold listings
+
+# Sources to query
+sources:
+  realtor: true
+  redfin: true
+
+# Property filters (applied to both sources; leave null to skip a filter)
+price_min: null
+price_max: null
+stretch_price_max: null    # e.g. 650000 - also include listings above price_max, up to here,
+                            # if they've sat on the market stretch_dom_min+ days (flagged in the report)
+stretch_dom_min: 45
+beds_min: 3
+beds_max: null
+baths_min: 1.5             # counts a half-bath as 0.5
+baths_max: null
+full_baths_min: null       # stricter: N FULL baths only (realtor.com data only, see README)
+sqft_min: null
+sqft_max: null
+lot_sqft_min: null
+lot_sqft_max: null
+year_built_min: null
+year_built_max: null
+property_types: null       # e.g. ["single_family", "townhomes"] - realtor.com only
+excluded_property_types: null  # e.g. ["mobile"] - applied client-side, both sources
+
+# Output
+output_dir: "reports"
+report_basename: "house_report"  # date/time gets appended automatically
+
+proxy: null                # e.g. "http://user:pass@host:port" - used by both sources
