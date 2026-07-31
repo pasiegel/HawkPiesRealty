@@ -29,23 +29,19 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        working-directory: house_scout
         run: pip install -r requirements.txt
 
       - name: Run search (realtor.com; Redfin is expected to fail from GH-hosted runners)
-        working-directory: house_scout
-        run: python -m house_scout.main --config inspirada_unicorn.yaml
+        run: python -m house_scout.main  # uses config.yaml at the repo root
 
       - name: Locate the report CSV just written
         id: find_csv
-        working-directory: house_scout
         run: |
           latest=$(ls -t reports/*.csv | head -n 1)
           echo "Found $latest"
           echo "csv=$latest" >> "$GITHUB_OUTPUT"
 
       - name: Download photos + build ranking report
-        working-directory: house_scout
         run: |
           python -m house_scout.photo_report \
             --report "${{ steps.find_csv.outputs.csv }}" \
@@ -53,13 +49,13 @@ jobs:
             --max-photos 10
 
       - name: Assemble Pages site (slide deck as the homepage)
-        working-directory: house_scout
         run: |
-          mkdir -p ../site
-          cp site_build/slide_deck.html ../site/index.html
-          cp site_build/ranking_report.md ../site/ranking_report.md
-          cp -r site_build/photos ../site/photos
-          cp "${{ steps.find_csv.outputs.csv }}" ../site/report.csv
+          mkdir -p site
+          cp site_build/slide_deck.html site/index.html
+          cp site_build/ranking_report.md site/ranking_report.md
+          cp -r site_build/photos site/photos
+          cp "${{ steps.find_csv.outputs.csv }}" site/report.csv
+          cp config_builder.html site/config_builder.html
 
       - uses: actions/upload-pages-artifact@v3
         with:
