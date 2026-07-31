@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>House Scout - Config Builder</title>
+<style>
+:root { color-scheme: light dark; }
+body {
+  font-family: system-ui, sans-serif; margin: 0; padding: 2rem 1.5rem 4rem;
+  max-width: 820px; margin-inline: auto; line-height: 1.4;
+}
+h1 { margin-bottom: 0.2rem; }
+.subtitle { color: #888; margin-bottom: 2rem; }
+fieldset {
+  border: 1px solid rgba(128,128,128,0.35); border-radius: 10px; padding: 1rem 1.25rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+legend { font-weight: 700; padding: 0 0.4rem; }
+.row { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.75rem; }
+.field { flex: 1 1 220px; display: flex; flex-direction: column; gap: 0.25rem; }
+.field.full { flex-basis: 100%; }
+label { font-size: 0.85rem; font-weight: 600; }
+.hint { font-size: 0.78rem; color: #888; font-weight: 400; margin-top: -0.1rem; }
+input[type="text"], input[type="number"], select {
+  padding: 0.45rem 0.55rem; border-radius: 6px; border: 1px solid rgba(128,128,128,0.5);
+  background: transparent; color: inherit; font-size: 0.9rem;
+}
+.checkbox-row { display: flex; align-items: center; gap: 0.5rem; }
+.checkbox-row label { font-weight: 500; }
+.check-group { display: flex; flex-wrap: wrap; gap: 0.6rem 1.2rem; }
+.check-group label { font-weight: 400; display: flex; align-items: center; gap: 0.35rem; }
+button {
+  font-size: 0.95rem; padding: 0.6rem 1.1rem; border-radius: 8px; border: none; cursor: pointer;
+  background: #2563eb; color: white; font-weight: 600;
+}
+button.secondary { background: rgba(128,128,128,0.25); color: inherit; }
+.actions { display: flex; gap: 0.75rem; margin: 1rem 0; flex-wrap: wrap; }
+#error { color: #dc2626; font-weight: 600; margin-bottom: 1rem; display: none; }
+#yaml-output {
+  width: 100%; min-height: 340px; font-family: ui-monospace, Consolas, monospace; font-size: 0.85rem;
+  padding: 1rem; border-radius: 10px; border: 1px solid rgba(128,128,128,0.35);
+  background: rgba(128,128,128,0.08); color: inherit; box-sizing: border-box; white-space: pre;
+}
+#copy-status { font-size: 0.85rem; color: #16a34a; margin-left: 0.5rem; }
+</style>
+</head>
+<body>
+
+<h1>House Scout - Config Builder</h1>
+<div class="subtitle">
+  Fill this out for one area/search, then click Generate. Download the result as
+  <code>config.yaml</code> and drop it into a copy of the house_scout repo template -
+  that's the only file a new targeted search needs.
+</div>
+
+<div id="error"></div>
+
+<form id="config-form" onsubmit="return false;">
+
+  <fieldset>
+    <legend>Where &amp; when</legend>
+    <div class="row">
+      <div class="field full">
+        <label for="location">Location</label>
+        <input type="text" id="location" placeholder="e.g. Inspirada, Henderson, NV" required>
+        <div class="hint">City/state, ZIP, or a specific street address.</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="radius_miles">Search radius (miles)</label>
+        <input type="number" id="radius_miles" value="20" min="0" step="1">
+        <div class="hint">Straight-line, not drive time. Only applies to a specific address.</div>
+      </div>
+      <div class="field">
+        <label for="listing_type">Listing type</label>
+        <select id="listing_type">
+          <option value="for_sale" selected>for_sale</option>
+          <option value="for_rent">for_rent</option>
+          <option value="sold">sold</option>
+          <option value="pending">pending</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="past_days">Only listings from the last N days</label>
+        <input type="number" id="past_days" value="30" min="1" step="1">
+      </div>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="active_only" checked>
+      <label for="active_only">Active listings only (exclude pending/contingent/under contract/sold)</label>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Sources</legend>
+    <div class="check-group">
+      <label><input type="checkbox" id="use_realtor" checked> realtor.com</label>
+      <label><input type="checkbox" id="use_redfin" checked> Redfin (blocked from cloud runners - see README)</label>
+    </div>
+    <div class="row" style="margin-top:0.75rem;">
+      <div class="field full">
+        <label for="proxy">Proxy URL (optional, used by both sources)</label>
+        <input type="text" id="proxy" placeholder="http://user:pass@host:port">
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Price</legend>
+    <div class="row">
+      <div class="field"><label for="price_min">Minimum price</label><input type="number" id="price_min" min="0" step="1000"></div>
+      <div class="field"><label for="price_max">Maximum price</label><input type="number" id="price_max" min="0" step="1000"></div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="stretch_price_max">Stretch price ceiling (optional)</label>
+        <input type="number" id="stretch_price_max" min="0" step="1000">
+        <div class="hint">Also include listings priced up to here if they qualify below.</div>
+      </div>
+      <div class="field">
+        <label for="stretch_dom_min">...and on market at least N days</label>
+        <input type="number" id="stretch_dom_min" value="45" min="0" step="1">
+        <div class="hint">A seller sitting this long may take less. Only matters if a stretch ceiling is set.</div>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Beds / baths</legend>
+    <div class="row">
+      <div class="field"><label for="beds_min">Minimum bedrooms</label><input type="number" id="beds_min" min="0" step="1"></div>
+      <div class="field"><label for="beds_max">Maximum bedrooms</label><input type="number" id="beds_max" min="0" step="1"></div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="baths_min">Minimum bathrooms</label>
+        <input type="number" id="baths_min" min="0" step="0.5">
+        <div class="hint">Counts a half-bath as 0.5.</div>
+      </div>
+      <div class="field"><label for="baths_max">Maximum bathrooms</label><input type="number" id="baths_max" min="0" step="0.5"></div>
+      <div class="field">
+        <label for="full_baths_min">Minimum FULL bathrooms</label>
+        <input type="number" id="full_baths_min" min="0" step="1">
+        <div class="hint">Stricter, ignores half-baths. realtor.com data only.</div>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Size / lot / age</legend>
+    <div class="row">
+      <div class="field"><label for="sqft_min">Minimum sqft</label><input type="number" id="sqft_min" min="0" step="100"></div>
+      <div class="field"><label for="sqft_max">Maximum sqft</label><input type="number" id="sqft_max" min="0" step="100"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="lot_sqft_min">Minimum lot size (sqft)</label><input type="number" id="lot_sqft_min" min="0" step="100"></div>
+      <div class="field"><label for="lot_sqft_max">Maximum lot size (sqft)</label><input type="number" id="lot_sqft_max" min="0" step="100"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="year_built_min">Minimum year built</label><input type="number" id="year_built_min" min="1800" step="1"></div>
+      <div class="field"><label for="year_built_max">Maximum year built</label><input type="number" id="year_built_max" min="1800" step="1"></div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Property type</legend>
+    <div class="row">
+      <div class="field full">
+        <label>Include only these types (blank = any)</label>
+        <div class="check-group" id="property_types">
+          <label><input type="checkbox" value="single_family"> single_family</label>
+          <label><input type="checkbox" value="condos"> condos</label>
+          <label><input type="checkbox" value="townhomes"> townhomes</label>
+          <label><input type="checkbox" value="multi_family"> multi_family</label>
+          <label><input type="checkbox" value="land"> land</label>
+          <label><input type="checkbox" value="mobile"> mobile</label>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field full">
+        <label>Exclude these types</label>
+        <div class="check-group" id="excluded_property_types">
+          <label><input type="checkbox" value="single_family"> single_family</label>
+          <label><input type="checkbox" value="condos"> condos</label>
+          <label><input type="checkbox" value="townhomes"> townhomes</label>
+          <label><input type="checkbox" value="multi_family"> multi_family</label>
+          <label><input type="checkbox" value="land"> land</label>
+          <label><input type="checkbox" value="mobile" checked> mobile</label>
+        </div>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Output</legend>
+    <div class="row">
+      <div class="field"><label for="output_dir">Output folder</label><input type="text" id="output_dir" value="reports"></div>
+      <div class="field"><label for="report_basename">Report file name prefix</label><input type="text" id="report_basename" value="house_report"></div>
+    </div>
+  </fieldset>
+
+  <div class="actions">
+    <button id="generate-btn">Generate config.yaml</button>
+  </div>
+</form>
+
+<div class="actions" id="output-actions" style="display:none;">
+  <button class="secondary" id="copy-btn">Copy to clipboard</button>
+  <button class="secondary" id="download-btn">Download config.yaml</button>
+  <span id="copy-status"></span>
+</div>
+<textarea id="yaml-output" readonly style="display:none;"></textarea>
+
+<script>
+function numOrNull(id) {
+  var v = document.getElementById(id).value;
+  return v === '' ? 'null' : String(Number(v));
+}
+function textOrNull(id) {
+  var v = document.getElementById(id).value.trim();
+  if (v === '') return 'null';
+  return '"' + v.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+}
+function boolStr(id) {
+  return document.getElementById(id).checked ? 'true' : 'false';
+}
+function checkedList(containerId) {
+  var boxes = document.querySelectorAll('#' + containerId + ' input[type="checkbox"]:checked');
+  if (boxes.length === 0) return 'null';
+  var vals = Array.prototype.map.call(boxes, function (b) { return '"' + b.value + '"'; });
+  return '[' + vals.join(', ') + ']';
+}
+
+function generateYaml() {
+  var errorEl = document.getElementById('error');
+  var location = document.getElementById('location').value.trim();
+  if (!location) {
+    errorEl.textContent = 'Location is required.';
+    errorEl.style.display = 'block';
+    document.getElementById('location').focus();
+    return null;
+  }
+  errorEl.style.display = 'none';
+
+  return [
+    '# House Scout search configuration - generated by config_builder.html',
+    'location: ' + textOrNull('location') + '',
+    'radius_miles: ' + numOrNull('radius_miles'),
+    'listing_type: "' + document.getElementById('listing_type').value + '"',
+    'past_days: ' + numOrNull('past_days'),
+    'active_only: ' + boolStr('active_only'),
+    '',
+    '# Sources to query',
+    'sources:',
+    '  realtor: ' + boolStr('use_realtor'),
+    '  redfin: ' + boolStr('use_redfin'),
+    '',
+    '# Property filters (applied to both sources; leave null to skip a filter)',
+    'price_min: ' + numOrNull('price_min'),
+    'price_max: ' + numOrNull('price_max'),
+    'stretch_price_max: ' + numOrNull('stretch_price_max') + '  # also include listings above price_max, up to here, if',
+    '                            # they\'ve sat on the market stretch_dom_min+ days (flagged in the report)',
+    'stretch_dom_min: ' + numOrNull('stretch_dom_min'),
+    'beds_min: ' + numOrNull('beds_min'),
+    'beds_max: ' + numOrNull('beds_max'),
+    'baths_min: ' + numOrNull('baths_min') + '             # counts a half-bath as 0.5',
+    'baths_max: ' + numOrNull('baths_max'),
+    'full_baths_min: ' + numOrNull('full_baths_min') + '          # stricter: N FULL baths only (realtor.com data only, see README)',
+    'sqft_min: ' + numOrNull('sqft_min'),
+    'sqft_max: ' + numOrNull('sqft_max'),
+    'lot_sqft_min: ' + numOrNull('lot_sqft_min'),
+    'lot_sqft_max: ' + numOrNull('lot_sqft_max'),
+    'year_built_min: ' + numOrNull('year_built_min'),
+    'year_built_max: ' + numOrNull('year_built_max'),
+    'property_types: ' + checkedList('property_types') + '           # include-only list; realtor.com only',
+    'excluded_property_types: ' + checkedList('excluded_property_types') + '  # applied client-side, both sources',
+    '',
+    '# Output',
+    'output_dir: ' + textOrNull('output_dir'),
+    'report_basename: ' + textOrNull('report_basename') + '  # date/time gets appended automatically',
+    '',
+    'proxy: ' + textOrNull('proxy') + '                # e.g. "http://user:pass@host:port" - used by both sources',
+    ''
+  ].join('\n');
+}
+
+document.getElementById('generate-btn').addEventListener('click', function () {
+  var yaml = generateYaml();
+  if (yaml === null) return;
+  var out = document.getElementById('yaml-output');
+  out.value = yaml;
+  out.style.display = 'block';
+  document.getElementById('output-actions').style.display = 'flex';
+  document.getElementById('copy-status').textContent = '';
+  out.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
+
+document.getElementById('copy-btn').addEventListener('click', function () {
+  var out = document.getElementById('yaml-output');
+  navigator.clipboard.writeText(out.value).then(function () {
+    document.getElementById('copy-status').textContent = 'Copied!';
+  }, function () {
+    out.select();
+    document.execCommand('copy');
+    document.getElementById('copy-status').textContent = 'Copied!';
+  });
+});
+
+document.getElementById('download-btn').addEventListener('click', function () {
+  var out = document.getElementById('yaml-output');
+  var blob = new Blob([out.value], { type: 'text/yaml' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'config.yaml';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+</script>
+
+</body>
+</html>

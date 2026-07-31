@@ -13,8 +13,9 @@ Scrapes for-sale listings for an area from **realtor.com** (via [HomeHarvest](ht
 
 ## Setup
 
+Run these from the repo root (this folder):
+
 ```bash
-cd house_scout
 python -m venv .venv
 .venv\Scripts\activate          # Windows
 pip install -r requirements.txt
@@ -22,10 +23,13 @@ pip install -r requirements.txt
 
 ## Configure your search
 
-Two ways to set up a search:
+This repo runs exactly one search, defined in `config.yaml` at the repo root — the idea being one targeted repo (+ its own GitHub Pages site) per area you're watching. Three ways to fill it in:
 
-- **Interactive wizard** (easiest): `python -m house_scout.wizard` asks about location, radius, price/bed/bath/sqft filters, property types to include/exclude, active-only, and which sources to use, then saves it to a YAML file of your choice and optionally runs it immediately. Handy for building several named searches (e.g. `vegas.yaml`, `grand_rapids.yaml`) without hand-editing YAML.
+- **Config Builder page** (easiest, especially for a new repo): open `config_builder.html` in any browser — no server, no install — fill out the form, click Generate, then Download to get a `config.yaml` ready to drop in. It's also published alongside each day's report at `/config_builder.html` on your site, so you can tweak criteria without cloning the repo — just download the new file and commit it back.
+- **Interactive wizard**: `python -m house_scout.wizard` asks the same questions on the command line and saves straight to a YAML file, optionally running the search immediately.
 - **Manual**: edit `config.yaml` directly.
+
+**Starting a new area/repo:** copy this whole folder (or use `house_scout_stage` from a previous copy, minus `.venv`/`reports`/`.git`), replace `config.yaml` with one generated for the new area, push it as a new repo, and enable Pages — the workflow and scripts don't need any other changes.
 
 Note on baths: `baths_min` is passed to both sources' APIs and counts a half-bath as 0.5 (so `baths_min: 2` would also match 1 full + 2 half baths). If you specifically need N *full* baths, also set `full_baths_min` — it's applied client-side against realtor.com's full/half split after fetching. Redfin's CSV export doesn't separate full/half baths, so `full_baths_min` can't be checked against Redfin rows; those are kept rather than dropped since we can't evaluate them.
 
@@ -78,18 +82,18 @@ Saves to `redfin_photos/<listing-slug>/001.jpg, 002.jpg, ...`. Like the Redfin s
 
 ## Daily automated run (GitHub Actions + Pages)
 
-`.github/workflows/daily-report.yml` runs `inspirada_unicorn.yaml` every day on GitHub's own servers, downloads photos, builds the ranking report, and publishes the HTML slide deck to GitHub Pages — no server of your own needed.
+`.github/workflows/daily-report.yml` runs this repo's `config.yaml` every day on GitHub's own servers, downloads photos, builds the ranking report, and publishes the HTML slide deck (plus the config builder) to GitHub Pages — no server of your own needed.
 
 Setup (one-time):
 
 1. Push this repo to GitHub as a **public** repo (Pages needs a public repo unless you're on a paid plan with private Pages).
 2. In the repo's **Settings → Pages**, set "Build and deployment" → Source to **GitHub Actions**.
 3. That's it — the workflow runs daily at 13:00 UTC (edit the `cron:` line in the workflow file to change the time), and you can also trigger it manually anytime from the **Actions** tab ("Run workflow").
-4. Your site publishes to `https://<your-username>.github.io/<repo-name>/` — the slide deck is the homepage, with the CSV (`report.csv`) and full write-up (`ranking_report.md`) linked alongside it.
+4. Your site publishes to `https://<your-username>.github.io/<repo-name>/` — the slide deck is the homepage, with the CSV (`report.csv`), full write-up (`ranking_report.md`), and the config builder (`config_builder.html`) linked alongside it.
 
 Each run **replaces** the previous one — there's no accumulating history, so the repo itself stays small (the site content is published as a Pages deployment, not committed to git).
 
-**Redfin will not work from this workflow.** GitHub-hosted runners are cloud/datacenter IPs, which is exactly what Redfin's WAF blocks (see above) — the run will still succeed with realtor.com-only results, same as it does here. To change which search runs daily, edit `inspirada_unicorn.yaml` (or point the workflow at a different config file).
+**Redfin will not work from this workflow.** GitHub-hosted runners are cloud/datacenter IPs, which is exactly what Redfin's WAF blocks (see above) — the run will still succeed with realtor.com-only results, same as it does here. To change which search runs daily, edit `config.yaml` (via `config_builder.html` or by hand).
 
 ## Known limitations / next steps
 
